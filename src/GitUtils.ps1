@@ -543,12 +543,31 @@ function Add-SshKey() {
             return
         }
 
+        if ($LaunchSshAddInExternalWindow) {
+            $launchExternally = $true
+        } else {
+            if ($host.Name -ne 'ConsoleHost') {
+                Write-Warning 'Running ssh-add from a host other than ConsoleHost. If input is required then the host may hang; set $LaunchSshAddInExternalWindow to $true to launch in an external window.'
+            }
+            $launchExternally = $false
+        }
+        
         if ($args.Count -eq 0) {
-            & $sshAdd
+            if ($launchExternally) {
+                $x = Start-Process $sshAdd -Wait -Passthru
+                $LASTEXITCODE = $x.ExitCode
+            } else {
+                & $sshAdd
+            }
         }
         else {
             foreach ($value in $args) {
-                & $sshAdd $value
+                if ($launchExternally) {
+                    $x = Start-Process $sshAdd -ArgumentList $value --Wait -Passthru
+                    $LASTEXITCODE = $x.ExitCode
+                } else {
+                    & $sshAdd $value
+                }
             }
         }
     }
